@@ -12,6 +12,8 @@ import AutoRefreshLayout from "../layout/AutoRefreshLayout";
 import LiveSplitIcon from "../assets/icon_small.png";
 
 import "../css/TimerView.scss";
+import * as Storage from "../storage";
+import firebase from 'firebase/app';
 
 export interface Props {
     isDesktop: boolean,
@@ -42,6 +44,8 @@ interface Callbacks {
 export class TimerView extends React.Component<Props, State> {
     private connection: Option<WebSocket>;
 
+    private viewLocalClicked = false;
+
     constructor(props: Props) {
         super(props);
 
@@ -49,6 +53,27 @@ export class TimerView extends React.Component<Props, State> {
             comparison: null,
             timingMethod: null,
         };
+    }
+
+    componentDidMount() {
+        Storage.getTicksRef().on('child_added', snapshot => {
+            const tickTimestamp = snapshot.val().tick;
+
+            if (!this.viewLocalClicked) {
+                console.log("TICK: " + tickTimestamp);
+                this.splitOrStart(false);
+            }
+        });
+
+        Storage.getTicksRef().on('child_removed', _ => {
+            if (!this.viewLocalClicked) {
+                this.reset(false);
+            }
+        });
+    }
+
+    componentWillUnmount() {
+        Storage.getTicksRef().off();
     }
 
     public render() {
@@ -68,7 +93,7 @@ export class TimerView extends React.Component<Props, State> {
         >
             <div>
                 <div
-                    onClick={(_) => this.splitOrStart()}
+                    onClick={(_) => this.splitOrStart(true)}
                     style={{
                         display: "inline-block",
                         cursor: "pointer",
@@ -95,7 +120,7 @@ export class TimerView extends React.Component<Props, State> {
                         <button aria-label="Skip Split" onClick={(_) => this.skipSplit()}>
                             <i className="fa fa-arrow-down" aria-hidden="true" />
                         </button>
-                        <button aria-label="Reset" onClick={(_) => this.reset()}>
+                        <button aria-label="Reset" onClick={(_) => this.reset(true)}>
                             <i className="fa fa-times" aria-hidden="true" />
                         </button>
                     </div>
@@ -254,8 +279,8 @@ export class TimerView extends React.Component<Props, State> {
                 switch (command) {
                     case "start": this.start(); break;
                     case "split": this.split(); break;
-                    case "splitorstart": this.splitOrStart(); break;
-                    case "reset": this.reset(); break;
+                    case "splitorstart": this.splitOrStart(true); break;
+                    case "reset": this.reset(true); break;
                     case "togglepause": this.togglePauseOrStart(); break;
                     case "undo": this.undoSplit(); break;
                     case "skip": this.skipSplit(); break;
@@ -297,19 +322,32 @@ export class TimerView extends React.Component<Props, State> {
     }
 
     private start() {
+        console.log("start() called...");
         this.writeWith((t) => t.start());
     }
 
     private split() {
+        console.log("split() called...");
         this.writeWith((t) => t.split());
     }
 
-    private splitOrStart() {
+    private splitOrStart(clicked: boolean) {
+        console.log("splitOrStart() called...");
         this.writeWith((t) => t.splitOrStart());
+        if (clicked) {
+            this.viewLocalClicked = true;
+            Storage.getTicksRef().push({
+                tick: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
     }
 
-    private reset() {
+    private reset(clicked: boolean) {
         this.writeWith((t) => t.reset(true));
+        if (clicked) {
+            this.viewLocalClicked = true;
+            Storage.getTicksRef().set(null);
+        }
     }
 
     private togglePauseOrStart() {

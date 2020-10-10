@@ -1,6 +1,7 @@
 module.exports = async (env, argv) => {
     const HtmlWebpackPlugin = require("html-webpack-plugin");
     const FaviconsWebpackPlugin = require("favicons-webpack-plugin");
+    const Dotenv = require("dotenv-webpack");
     const { CleanWebpackPlugin } = require("clean-webpack-plugin");
     const WorkboxPlugin = require("workbox-webpack-plugin");
     const webpack = require("webpack");
@@ -67,6 +68,7 @@ module.exports = async (env, argv) => {
 
         plugins: [
             ...(isProduction ? [new CleanWebpackPlugin()] : []),
+            new Dotenv(),
             new FaviconsWebpackPlugin({
                 logo: path.resolve("src/assets/icon.png"),
                 inject: true,

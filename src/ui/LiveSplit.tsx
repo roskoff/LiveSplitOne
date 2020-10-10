@@ -34,7 +34,7 @@ export enum MenuKind {
 type Menu =
     { kind: MenuKind.Timer } |
     { kind: MenuKind.Splits } |
-    { kind: MenuKind.RunEditor, editor: RunEditor, splitsKey?: number } |
+    { kind: MenuKind.RunEditor, editor: RunEditor, splitsKey?: string } |
     { kind: MenuKind.Layout } |
     { kind: MenuKind.LayoutEditor, editor: LayoutEditor } |
     { kind: MenuKind.SettingsEditor, config: HotkeyConfig } |
@@ -45,7 +45,7 @@ export interface Props {
     layout?: Storage.LayoutSettings,
     hotkeys?: Storage.HotkeyConfigSettings,
     layoutWidth: number,
-    splitsKey?: number,
+    splitsKey?: string,
 }
 
 export interface State {
@@ -56,7 +56,7 @@ export interface State {
     layoutState: LayoutState,
     layoutWidth: number,
     menu: Menu,
-    openedSplitsKey?: number,
+    openedSplitsKey?: string,
     sidebarOpen: boolean,
     sidebarTransitionsEnabled: boolean,
     storedLayoutWidth: number,
@@ -402,7 +402,7 @@ export class LiveSplit extends React.Component<Props, State> {
         this.openSplitsView();
     }
 
-    public setSplitsKey(openedSplitsKey?: number) {
+    public setSplitsKey(openedSplitsKey?: string) {
         this.setState({
             openedSplitsKey,
         });

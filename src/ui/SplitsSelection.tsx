@@ -15,23 +15,23 @@ import DragUpload from "./DragUpload";
 import { ContextMenuTrigger, ContextMenu, MenuItem } from "react-contextmenu";
 
 export interface EditingInfo {
-    splitsKey?: number,
+    splitsKey?: string,
     run: Run,
 }
 
 export interface Props {
     timer: SharedTimerRef,
-    openedSplitsKey?: number,
+    openedSplitsKey?: string,
     callbacks: Callbacks,
 }
 
 interface State {
-    splitsInfos?: Array<[number, SplitsInfo]>,
+    splitsInfos?: Array<[string, SplitsInfo]>,
 }
 
 interface Callbacks {
     openRunEditor(editingInfo: EditingInfo): void,
-    setSplitsKey(newKey?: number): void,
+    setSplitsKey(newKey?: string): void,
     openTimerView(): void,
     renderViewWithSidebar(renderedView: JSX.Element, sidebarContent: JSX.Element): JSX.Element,
 }
@@ -97,12 +97,13 @@ export class SplitsSelection extends React.Component<Props, State> {
 
     private async refreshDb() {
         const splitsInfos = await getSplitsInfos();
+        console.log("SplitsInfos after getSplitsInfos: " + splitsInfos)
         this.setState({
             splitsInfos,
         });
     }
 
-    private renderSavedSplitsRow(key: number, info: SplitsInfo) {
+    private renderSavedSplitsRow(key: string, info: SplitsInfo) {
         const isOpened = key === this.props.openedSplitsKey;
 
         const segmentIconContextMenuId = `splits-${key}-context-menu`;
@@ -203,7 +204,7 @@ export class SplitsSelection extends React.Component<Props, State> {
         );
     }
 
-    private async getRunFromKey(key: number): Promise<Run> {
+    private async getRunFromKey(key: string): Promise<Run> {
         const splitsData = await loadSplits(key);
         if (splitsData === undefined) {
             throw Error("The splits key is invalid.");
@@ -218,7 +219,7 @@ export class SplitsSelection extends React.Component<Props, State> {
         });
     }
 
-    private async openSplits(key: number) {
+    private async openSplits(key: string) {
         const isModified = this.props.timer.readWith((t) => t.getRun().hasBeenModified());
         if (isModified && !confirm(
             "Your current splits are modified and have unsaved changes. Do you want to continue and discard those changes?",
@@ -236,7 +237,7 @@ export class SplitsSelection extends React.Component<Props, State> {
         this.props.callbacks.setSplitsKey(key);
     }
 
-    private async exportSplits(key: number, info: SplitsInfo) {
+    private async exportSplits(key: string, info: SplitsInfo) {
         try {
             const splitsData = await loadSplits(key);
             if (splitsData === undefined) {
@@ -263,17 +264,17 @@ export class SplitsSelection extends React.Component<Props, State> {
         }
     }
 
-    private async editSplits(splitsKey: number) {
+    private async editSplits(splitsKey: string) {
         const run = await this.getRunFromKey(splitsKey);
         this.props.callbacks.openRunEditor({ splitsKey, run });
     }
 
-    private async copySplits(key: number) {
+    private async copySplits(key: string) {
         await copySplits(key);
         await this.refreshDb();
     }
 
-    private async deleteSplits(key: number) {
+    private async deleteSplits(key: string) {
         if (!confirm(
             "Are you sure you want to delete the splits? This operation can not be undone.",
         )) {
@@ -332,11 +333,12 @@ export class SplitsSelection extends React.Component<Props, State> {
             }
             this.refreshDb();
         } catch (_) {
+            console.log('saveSplits error:' + _);
             toast.error("Failed to save the splits.");
         }
     }
 
-    private async uploadSplitsToSplitsIO(key: number): Promise<Option<Window>> {
+    private async uploadSplitsToSplitsIO(key: string): Promise<Option<Window>> {
         try {
             const splitsData = await loadSplits(key);
             if (splitsData === undefined) {
@@ -373,8 +375,10 @@ export class SplitsSelection extends React.Component<Props, State> {
         }
         try {
             const run = await SplitsIO.downloadById(id);
+            console.log("Run downloaded from splits.io: " + run.gameName)
             await this.storeRun(run);
         } catch (_) {
+            console.log('Error: ' + _);
             toast.error("Failed to download the splits.");
         }
     }
@@ -392,6 +396,7 @@ export class SplitsSelection extends React.Component<Props, State> {
                 return;
             }
             await storeRunWithoutDisposing(run, undefined);
+            console.log('refreshDb entering...');
             await this.refreshDb();
         } finally {
             run.dispose();
